@@ -36,7 +36,6 @@ Kirigami.Page {
         }
         return result;
     }
-    property int basicColorIndex: -1
 
     readonly property int customColorCount: 16
     readonly property list<string> customColors: {
@@ -46,8 +45,7 @@ Kirigami.Page {
         }
         return colors;
     }
-    // The underlined custom cell, and the slot "Add to Custom Colors" writes to next.
-    property int selectedCustomColorIndex: -1
+    // The slot "Add to Custom Colors" writes to next.
     property int customColorIndex: 0
 
     signal aboutRequested
@@ -68,19 +66,19 @@ Kirigami.Page {
         alpha = newColor.a;
     }
 
-    // Underline the cell showing this color, if any.
+    // As QColorDialogPrivate::selectColor(): move the current cell of the grid
+    // showing this color, if any, to it and focus that grid.
     function selectColor(selectedColor: color): void {
         const basicIndex = basicColors.findIndex(basicColor => Qt.colorEqual(basicColor, selectedColor));
         if (basicIndex >= 0) {
-            basicColorIndex = basicIndex;
-            selectedCustomColorIndex = -1;
+            basicColorsGrid.currentIndex = basicIndex;
+            basicColorsGrid.forceActiveFocus();
             return;
         }
         const customIndex = customColors.findIndex(customColor => Qt.colorEqual(customColor, selectedColor));
         if (customIndex >= 0) {
-            selectedCustomColorIndex = customIndex;
-            customColorIndex = customIndex;
-            basicColorIndex = -1;
+            customColorsGrid.currentIndex = customIndex;
+            customColorsGrid.forceActiveFocus();
         }
     }
 
@@ -148,7 +146,7 @@ Kirigami.Page {
 
             FieldLabel {
                 label: i18n("&Basic colors")
-                onActivated: basicColorsGrid.focusSwatch(0)
+                buddy: basicColorsGrid
             }
 
             ColorSwatchGrid {
@@ -156,12 +154,7 @@ Kirigami.Page {
 
                 colors: root.basicColors
                 rows: 6
-                currentIndex: root.basicColorIndex
-                onActivated: (index, swatchColor) => {
-                    root.basicColorIndex = index;
-                    root.selectedCustomColorIndex = -1;
-                    root.setColor(swatchColor);
-                }
+                onActivated: (index, swatchColor) => root.setColor(swatchColor)
             }
 
             QQC2.Button {
@@ -177,7 +170,7 @@ Kirigami.Page {
 
             FieldLabel {
                 label: i18n("&Custom colors")
-                onActivated: customColorsGrid.focusSwatch(root.selectedCustomColorIndex)
+                buddy: customColorsGrid
             }
 
             ColorSwatchGrid {
@@ -185,13 +178,9 @@ Kirigami.Page {
 
                 colors: root.customColors
                 rows: 2
-                currentIndex: root.selectedCustomColorIndex
-                onActivated: (index, swatchColor) => {
-                    root.selectedCustomColorIndex = index;
-                    root.customColorIndex = index;
-                    root.basicColorIndex = -1;
-                    root.setColor(swatchColor);
-                }
+                // QColorDialog adds the next custom color at the current cell.
+                onCurrentIndexChanged: root.customColorIndex = currentIndex
+                onActivated: (index, swatchColor) => root.setColor(swatchColor)
             }
 
             QQC2.Button {
