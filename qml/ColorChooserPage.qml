@@ -94,6 +94,8 @@ Kirigami.Page {
     title: i18n("Select Color")
     globalToolBarStyle: Kirigami.ApplicationHeaderStyle.None
     padding: 10
+    // mainLay's spacing above the buttons; the footer has no top padding.
+    bottomPadding: 6
 
     Component.onCompleted: {
         // QColorDialog starts out white before the initial color is applied.
@@ -265,7 +267,11 @@ Kirigami.Page {
     }
 
     footer: QQC2.Control {
-        padding: 10
+        // The style sets each side's padding, so "padding" alone has no effect.
+        leftPadding: 10
+        rightPadding: 10
+        topPadding: 0
+        bottomPadding: 10
 
         contentItem: RowLayout {
             spacing: Kirigami.Units.largeSpacing
