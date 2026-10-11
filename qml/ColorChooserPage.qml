@@ -194,6 +194,8 @@ Kirigami.Page {
 
             QQC2.Button {
                 Layout.fillWidth: true
+                // QColorDialog spaces leftLay's end like QColorShower's margin.
+                Layout.bottomMargin: 6
                 text: i18n("&Add to Custom Colors")
                 onClicked: root.addCustomColor()
             }
