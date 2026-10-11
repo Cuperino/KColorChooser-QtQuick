@@ -23,10 +23,21 @@ RowLayout {
     readonly property int green: Math.round(color.g * 255)
     readonly property int blue: Math.round(color.b * 255)
 
+    // QColorShower's spin boxes are 60 px wide, but styles that lay their
+    // indicators out in the padding, such as Material, need more for three digits.
+    readonly property real spinBoxWidth: Math.max(60, Math.ceil(hueField.leftPadding + hueField.rightPadding + digitsMetrics.advanceWidth))
+
     signal hsvaEdited(real hue, real saturation, real value, real alpha)
     signal colorEdited(color editedColor)
 
     spacing: 6
+
+    TextMetrics {
+        id: digitsMetrics
+
+        font: hueField.font
+        text: "888"
+    }
 
     Rectangle {
         Layout.fillHeight: true
@@ -52,7 +63,7 @@ RowLayout {
         QQC2.SpinBox {
             id: hueField
 
-            Layout.preferredWidth: 60
+            Layout.preferredWidth: root.spinBoxWidth
             from: 0
             to: 359
             editable: true
@@ -71,7 +82,7 @@ RowLayout {
         QQC2.SpinBox {
             id: redField
 
-            Layout.preferredWidth: 60
+            Layout.preferredWidth: root.spinBoxWidth
             from: 0
             to: 255
             editable: true
@@ -90,7 +101,7 @@ RowLayout {
         QQC2.SpinBox {
             id: satField
 
-            Layout.preferredWidth: 60
+            Layout.preferredWidth: root.spinBoxWidth
             from: 0
             to: 255
             editable: true
@@ -109,7 +120,7 @@ RowLayout {
         QQC2.SpinBox {
             id: greenField
 
-            Layout.preferredWidth: 60
+            Layout.preferredWidth: root.spinBoxWidth
             from: 0
             to: 255
             editable: true
@@ -128,7 +139,7 @@ RowLayout {
         QQC2.SpinBox {
             id: valField
 
-            Layout.preferredWidth: 60
+            Layout.preferredWidth: root.spinBoxWidth
             from: 0
             to: 255
             editable: true
@@ -147,7 +158,7 @@ RowLayout {
         QQC2.SpinBox {
             id: blueField
 
-            Layout.preferredWidth: 60
+            Layout.preferredWidth: root.spinBoxWidth
             from: 0
             to: 255
             editable: true
@@ -167,7 +178,7 @@ RowLayout {
         QQC2.SpinBox {
             id: alphaField
 
-            Layout.preferredWidth: 60
+            Layout.preferredWidth: root.spinBoxWidth
             from: 0
             to: 255
             editable: true

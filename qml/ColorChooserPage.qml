@@ -48,8 +48,14 @@ Kirigami.Page {
     // The slot "Add to Custom Colors" writes to next.
     property int customColorIndex: 0
 
+    // Whether to show the Help button, whose menu is about KColorChooser itself.
+    property bool showHelpButton: true
+
     signal aboutRequested
     signal aboutKDERequested
+    signal accepted
+    signal rejected
+    // Emitted after either accepted or rejected.
     signal finished
 
     function setColor(newColor: color): void {
@@ -80,6 +86,16 @@ Kirigami.Page {
             customColorsGrid.currentIndex = customIndex;
             customColorsGrid.forceActiveFocus();
         }
+    }
+
+    function accept(): void {
+        accepted();
+        finished();
+    }
+
+    function reject(): void {
+        rejected();
+        finished();
     }
 
     function addCustomColor(): void {
@@ -133,7 +149,7 @@ Kirigami.Page {
     Shortcut {
         sequences: [StandardKey.Cancel]
         enabled: root.visible
-        onActivated: root.finished()
+        onActivated: root.reject()
     }
 
     RowLayout {
@@ -267,6 +283,7 @@ Kirigami.Page {
 
             QQC2.DialogButtonBox {
                 padding: 0
+                visible: root.showHelpButton
                 standardButtons: QQC2.DialogButtonBox.Help
                 onHelpRequested: {
                     const helpButton = standardButton(QQC2.DialogButtonBox.Help);
@@ -282,8 +299,8 @@ Kirigami.Page {
                 padding: 0
                 standardButtons: QQC2.DialogButtonBox.Ok | QQC2.DialogButtonBox.Cancel
                 Component.onCompleted: standardButton(QQC2.DialogButtonBox.Ok).Accessible.defaultButton = true
-                onAccepted: root.finished()
-                onRejected: root.finished()
+                onAccepted: root.accept()
+                onRejected: root.reject()
             }
         }
 
