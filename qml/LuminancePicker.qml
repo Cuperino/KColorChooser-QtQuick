@@ -15,8 +15,12 @@ Item {
     property real saturation: 0
     property real value: 0
 
-    readonly property int contentsOffset: 1
-    readonly property real valueY: contentsOffset + (1 - value) * (height - 2 * contentsOffset)
+    // QColorLuminancePicker's foff and coff: the frame is inset foff from the
+    // top and bottom, and values map onto the height less coff on each side.
+    readonly property int frameOffset: 3
+    readonly property int contentsOffset: 4
+    // Integer arithmetic, as QColorLuminancePicker::val2y().
+    readonly property int valueY: contentsOffset + Math.floor((255 - Math.round(value * 255)) * (height - 2 * contentsOffset - 1) / 255)
 
     signal moved(real value)
 
@@ -54,15 +58,22 @@ Item {
     }
 
     Rectangle {
+        y: root.frameOffset
         width: root.width - 5
-        height: root.height
+        height: root.height - 2 * root.frameOffset
+        color: "transparent"
         border.width: 1
         border.color: root.activeFocus
                       ? Kirigami.Theme.highlightColor
                       : Kirigami.ColorUtils.linearInterpolation(Kirigami.Theme.backgroundColor, Kirigami.Theme.textColor, 0.3)
-        gradient: Gradient {
-            GradientStop { position: 0; color: Qt.hsva(root.hue, root.saturation, 1, 1) }
-            GradientStop { position: 1; color: "black" }
+
+        Rectangle {
+            anchors.fill: parent
+            anchors.margins: parent.border.width
+            gradient: Gradient {
+                GradientStop { position: 0; color: Qt.hsva(root.hue, root.saturation, 1, 1) }
+                GradientStop { position: 1; color: "black" }
+            }
         }
     }
 
@@ -70,17 +81,18 @@ Item {
         x: root.width - 5
         y: root.valueY - 5
         width: 5
-        height: 10
-        preferredRendererType: Shape.CurveRenderer
+        height: 11
 
+        // Centered on the pixel row, to cover the same pixels as QPainter's
+        // aliased polygon.
         ShapePath {
             strokeWidth: -1
             fillColor: Kirigami.Theme.textColor
             startX: 0
-            startY: 5
-            PathLine { x: 5; y: 10 }
-            PathLine { x: 5; y: 0 }
-            PathLine { x: 0; y: 5 }
+            startY: 5.5
+            PathLine { x: 5; y: 10.5 }
+            PathLine { x: 5; y: 0.5 }
+            PathLine { x: 0; y: 5.5 }
         }
     }
 
@@ -90,7 +102,7 @@ Item {
 
         function update(mouse: var): void {
             root.forceActiveFocus(Qt.MouseFocusReason);
-            root.moveTo(1 - (mouse.y - root.contentsOffset) / (height - 2 * root.contentsOffset));
+            root.moveTo(1 - (mouse.y - root.contentsOffset) / (height - 2 * root.contentsOffset - 1));
         }
 
         onPressed: mouse => update(mouse)

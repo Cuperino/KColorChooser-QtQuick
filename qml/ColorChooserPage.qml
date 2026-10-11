@@ -205,10 +205,16 @@ Kirigami.Page {
             spacing: 0
 
             RowLayout {
-                Layout.topMargin: 8
-                spacing: 15
+                // QColorDialog's pickLay: the luminance picker extends lumSpace
+                // above and below the color picker, 10 px past the layout spacing.
+                readonly property int lumSpace: 3
+
+                Layout.topMargin: 8 - lumSpace
+                spacing: 6 + 10
 
                 HueSaturationPicker {
+                    Layout.topMargin: parent.lumSpace
+                    Layout.bottomMargin: parent.lumSpace
                     hue: root.hue
                     saturation: root.saturation
                     onMoved: (newHue, newSaturation) => {
