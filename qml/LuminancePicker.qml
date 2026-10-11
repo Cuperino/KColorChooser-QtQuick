@@ -63,9 +63,8 @@ Item {
         height: root.height - 2 * root.frameOffset
         color: "transparent"
         border.width: 1
-        border.color: root.activeFocus
-                      ? Kirigami.Theme.highlightColor
-                      : Kirigami.ColorUtils.linearInterpolation(Kirigami.Theme.backgroundColor, Kirigami.Theme.textColor, 0.3)
+        // Like QColorLuminancePicker, no focus indicator.
+        border.color: Kirigami.ColorUtils.linearInterpolation(Kirigami.Theme.backgroundColor, Kirigami.Theme.textColor, 0.3)
 
         Rectangle {
             anchors.fill: parent
