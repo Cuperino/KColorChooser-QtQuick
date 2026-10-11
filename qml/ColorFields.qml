@@ -26,7 +26,7 @@ RowLayout {
     signal hsvaEdited(real hue, real saturation, real value, real alpha)
     signal colorEdited(color editedColor)
 
-    spacing: Kirigami.Units.largeSpacing
+    spacing: 6
 
     Rectangle {
         Layout.fillHeight: true
@@ -176,10 +176,11 @@ RowLayout {
             Accessible.name: alphaLabel.Kirigami.MnemonicData.plainTextLabel
         }
 
+        // QColorShower leaves row 4 empty, which still takes the grid spacing.
         FieldLabel {
             id: htmlLabel
 
-            Layout.topMargin: Kirigami.Units.smallSpacing
+            Layout.topMargin: 6
             Layout.alignment: Qt.AlignRight
             label: i18n("&HTML:")
             buddy: htmlField
@@ -187,7 +188,7 @@ RowLayout {
         QQC2.TextField {
             id: htmlField
 
-            Layout.topMargin: Kirigami.Units.smallSpacing
+            Layout.topMargin: 6
             Layout.columnSpan: 3
             Layout.preferredWidth: Kirigami.Units.gridUnit * 7.5
             text: "#" + [root.red, root.green, root.blue].map(component => component.toString(16).padStart(2, "0")).join("")

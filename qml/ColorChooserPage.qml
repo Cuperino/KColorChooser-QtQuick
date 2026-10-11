@@ -138,7 +138,7 @@ Kirigami.Page {
 
     RowLayout {
         anchors.fill: parent
-        spacing: Kirigami.Units.largeSpacing + Kirigami.Units.smallSpacing
+        spacing: 6
 
         ColumnLayout {
             Layout.fillHeight: true
@@ -206,10 +206,11 @@ Kirigami.Page {
 
             RowLayout {
                 // QColorDialog's pickLay: the luminance picker extends lumSpace
-                // above and below the color picker, 10 px past the layout spacing.
+                // above and below the color picker, 10 px past the layout spacing,
+                // with the same margins as the color fields.
                 readonly property int lumSpace: 3
 
-                Layout.topMargin: 8 - lumSpace
+                Layout.margins: 6
                 spacing: 6 + 10
 
                 HueSaturationPicker {
@@ -233,16 +234,18 @@ Kirigami.Page {
                 }
             }
 
+            // rightLay's stretch, plus the spacing around it.
             Item {
                 Layout.fillHeight: true
-                Layout.minimumHeight: 22
+                Layout.minimumHeight: 6
             }
 
             ColorFields {
                 id: colorFields
 
                 Layout.fillWidth: true
-                Layout.rightMargin: 4
+                // QColorShower's grid margins, which equal its spacing.
+                Layout.margins: 6
                 hue: root.hue
                 saturation: root.saturation
                 value: root.value
