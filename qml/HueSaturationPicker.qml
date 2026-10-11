@@ -86,10 +86,11 @@ Item {
         }
     }
 
-    // Crosshair, two 20×2 black bars.
+    // Crosshair, two 20×2 black bars, placed with QColorPicker::colPt()'s
+    // integer arithmetic.
     Item {
-        x: root.frameWidth + Math.round((1 - root.hue) * (root.pWidth - 1))
-        y: root.frameWidth + Math.round((1 - root.saturation) * (root.pHeight - 1))
+        x: root.frameWidth + Math.floor((360 - Math.round(root.hue * 360)) * (root.pWidth - 1) / 360)
+        y: root.frameWidth + Math.floor((255 - Math.round(root.saturation * 255)) * (root.pHeight - 1) / 255)
 
         Rectangle {
             x: -9
