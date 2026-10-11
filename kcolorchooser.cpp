@@ -21,93 +21,89 @@ AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+#include "colorchooserhelper.h"
 #include "kcolorchooser_version.h"
 
 #include <KAboutData>
-#include <KHelpMenu>
+#include <KLocalizedQmlContext>
 #include <KLocalizedString>
 
-#include <QApplication>
-#include <QClipboard>
-#include <QColorDialog>
 #include <QCommandLineParser>
-#include <QDialogButtonBox>
-#include <QMenu>
-#include <QMimeData>
-#include <QPushButton>
+#include <QGuiApplication>
+#include <QIcon>
+#include <QQmlApplicationEngine>
+#include <QQuickStyle>
 
 #include <iostream>
 
+using namespace Qt::StringLiterals;
+
 int main(int argc, char *argv[])
 {
-    QApplication app(argc, argv);
+    QGuiApplication app(argc, argv);
+
+    if (qEnvironmentVariableIsEmpty("QT_QUICK_CONTROLS_STYLE")) {
+        QQuickStyle::setStyle(u"org.kde.desktop"_s);
+    }
 
     KLocalizedString::setApplicationDomain("kcolorchooser");
 
-    KAboutData aboutData(QStringLiteral("kcolorchooser"),
+    KAboutData aboutData(u"kcolorchooser"_s,
                          i18n("KColorChooser"),
                          QStringLiteral(KCOLORCHOOSER_VERSION_STRING),
                          i18n("KDE Color Chooser"),
-                         KAboutLicense::BSD_2_Clause,
+                         KAboutLicense::MIT,
                          i18n("(c) 2000, Waldo Bastian"));
-    aboutData.addAuthor(i18n("Waldo Bastian"), QString(), QStringLiteral("bastian@kde.org"));
-    aboutData.addAuthor(i18n("Hugo Parente Lima"), i18n("KF5 port"), QStringLiteral("hugo.pl@gmail.com"));
+    aboutData.addAuthor(i18n("Waldo Bastian"), QString(), u"bastian@kde.org"_s);
+    aboutData.addAuthor(i18n("Hugo Parente Lima"), i18n("KF5 port"), u"hugo.pl@gmail.com"_s);
+    aboutData.addAuthor(i18n("Javier O. Cordero Pérez"), i18n("Qt Quick port"), u"javiercorderoperez@gmail.com"_s);
     aboutData.setTranslator(i18nc("NAME OF TRANSLATORS", "Your names"), i18nc("EMAIL OF TRANSLATORS", "Your emails"));
     KAboutData::setApplicationData(aboutData);
 
     QCommandLineParser parser;
     parser.setSingleDashWordOptionMode(QCommandLineParser::ParseAsLongOptions);
     aboutData.setupCommandLine(&parser);
-    QCommandLineOption print(QStringLiteral("print"), i18n("Print the selected color to stdout."));
+    QCommandLineOption print(u"print"_s, i18n("Print the selected color to stdout."));
     parser.addOption(print);
-    QCommandLineOption color(QStringLiteral("color"), i18n("Set initially selected color."), i18n("color"));
+    QCommandLineOption color(u"color"_s, i18n("Set initially selected color."), i18n("color"));
     parser.addOption(color);
     parser.process(app);
     aboutData.processCommandLine(&parser);
 
-    QApplication::setWindowIcon(QIcon::fromTheme(QStringLiteral("kcolorchooser")));
+    QGuiApplication::setWindowIcon(QIcon::fromTheme(u"kcolorchooser"_s));
 
     /* Work around https://bugreports.qt.io/browse/QTBUG-120957 */
     app.processEvents();
 
-    QColorDialog dlg;
-    dlg.setOption(QColorDialog::DontUseNativeDialog);
-    dlg.setOption(QColorDialog::ShowAlphaChannel);
-    QDialogButtonBox *box = dlg.findChild<QDialogButtonBox *>();
-    if (!box) {
-        return 1;
-    }
-
-    box->addButton(QDialogButtonBox::Help);
-
-    KHelpMenu *help = new KHelpMenu(&dlg, aboutData);
-    help->menu();
-    delete help->action(KHelpMenu::menuHelpContents);
-    QObject::connect(box, &QDialogButtonBox::helpRequested, [=]() {
-        QPushButton *button = box->button(QDialogButtonBox::Help);
-        QPoint pos = button->pos();
-        pos.ry() += button->height();
-        pos = box->mapToGlobal(pos);
-        help->menu()->exec(pos);
-    });
-
+    QColor initialColor = Qt::white;
     if (parser.isSet(color)) {
-        dlg.setCurrentColor(QColor(parser.value(color)));
-    } else {
-        const QMimeData *mimeData = QApplication::clipboard()->mimeData(QClipboard::Clipboard);
-        if (mimeData) {
-            QColor clipboardColor = mimeData->colorData().value<QColor>();
-            if (clipboardColor.isValid()) {
-                dlg.setCurrentColor(clipboardColor);
-            }
-        }
+        initialColor = QColor(parser.value(color));
+    } else if (const QColor clipboardColor = ColorChooserHelper::clipboardColor(); clipboardColor.isValid()) {
+        initialColor = clipboardColor;
     }
 
-    dlg.show();
-    app.exec();
+    QQmlApplicationEngine engine;
+    KLocalization::setupLocalizedContext(&engine);
+    engine.setInitialProperties({{u"initialColor"_s, initialColor}});
+    QObject::connect(
+        &engine,
+        &QQmlApplicationEngine::objectCreationFailed,
+        &app,
+        [] {
+            QCoreApplication::exit(1);
+        },
+        Qt::QueuedConnection);
+    engine.loadFromModule("org.kde.kcolorchooser", "Main");
 
-    const QColor c = dlg.currentColor();
+    const int result = app.exec();
+
+    if (engine.rootObjects().isEmpty()) {
+        return result;
+    }
+
+    const QColor c = engine.rootObjects().constFirst()->property("selectedColor").value<QColor>();
     if (parser.isSet(print) && c.isValid()) {
         std::cout << c.name().toUtf8().constData() << std::endl;
     }
+    return result;
 }

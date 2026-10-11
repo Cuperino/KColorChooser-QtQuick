@@ -1,2 +1,2 @@
 #! /bin/sh
-$XGETTEXT *.cpp -o $podir/kcolorchooser.pot
+$XGETTEXT `find . -name '*.cpp' -o -name '*.qml'` -o $podir/kcolorchooser.pot
