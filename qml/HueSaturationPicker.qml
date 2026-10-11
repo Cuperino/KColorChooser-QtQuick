@@ -47,15 +47,25 @@ Item {
 
     // The field is drawn at a fixed value of 200.
     readonly property real fieldValue: 200 / 255
+    // As QColorPicker: a pWidth × pHeight image inside a 1 px frame.
+    readonly property int frameWidth: 1
+    readonly property int pWidth: width - 2 * frameWidth
+    readonly property int pHeight: height - 2 * frameWidth
 
     Rectangle {
-        id: field
-
         anchors.fill: parent
-        border.width: 1
+        color: "transparent"
+        border.width: root.frameWidth
         border.color: root.activeFocus
                       ? Kirigami.Theme.highlightColor
                       : Kirigami.ColorUtils.linearInterpolation(Kirigami.Theme.backgroundColor, Kirigami.Theme.textColor, 0.3)
+    }
+
+    Rectangle {
+        x: root.frameWidth
+        y: root.frameWidth
+        width: root.pWidth
+        height: root.pHeight
         gradient: Gradient {
             orientation: Gradient.Horizontal
             GradientStop { position: 0 / 6; color: Qt.hsva(0 / 6, 1, root.fieldValue, 1) }
@@ -69,7 +79,6 @@ Item {
 
         Rectangle {
             anchors.fill: parent
-            anchors.margins: parent.border.width
             gradient: Gradient {
                 GradientStop { position: 0; color: Qt.rgba(root.fieldValue, root.fieldValue, root.fieldValue, 0) }
                 GradientStop { position: 1; color: Qt.rgba(root.fieldValue, root.fieldValue, root.fieldValue, 1) }
@@ -79,8 +88,8 @@ Item {
 
     // Crosshair, two 20×2 black bars.
     Item {
-        x: (1 - root.hue) * (root.width - 1)
-        y: (1 - root.saturation) * (root.height - 1)
+        x: root.frameWidth + Math.round((1 - root.hue) * (root.pWidth - 1))
+        y: root.frameWidth + Math.round((1 - root.saturation) * (root.pHeight - 1))
 
         Rectangle {
             x: -9
@@ -103,7 +112,7 @@ Item {
 
         function update(mouse: var): void {
             root.forceActiveFocus(Qt.MouseFocusReason);
-            root.moveTo(1 - mouse.x / (width - 1), 1 - mouse.y / (height - 1));
+            root.moveTo(1 - (mouse.x - root.frameWidth) / (root.pWidth - 1), 1 - (mouse.y - root.frameWidth) / (root.pHeight - 1));
         }
 
         onPressed: mouse => update(mouse)
