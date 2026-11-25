@@ -9,8 +9,11 @@
 
 #include <QClipboard>
 #include <QDebug>
+#include <QDrag>
 #include <QGuiApplication>
 #include <QMimeData>
+#include <QPainter>
+#include <QPixmap>
 #include <QUrlQuery>
 
 using namespace Qt::StringLiterals;
@@ -86,6 +89,29 @@ void ColorChooserHelper::copyToClipboard(const QColor &color) const
 QColor ColorChooserHelper::colorFromClipboard() const
 {
     return clipboardColor();
+}
+
+void ColorChooserHelper::dragColor(QQuickItem *source, const QColor &color, int width, int height) const
+{
+    if (!source) {
+        return;
+    }
+
+    // As QColorWell and QColorShowLabel::mouseMoveEvent().
+    auto mimeData = new QMimeData;
+    mimeData->setColorData(color);
+    QPixmap pixmap(width, height);
+    pixmap.fill(color);
+    QPainter painter(&pixmap);
+    painter.drawRect(0, 0, pixmap.width() - 1, pixmap.height() - 1);
+    painter.end();
+    auto drag = new QDrag(source);
+    drag->setMimeData(mimeData);
+    drag->setPixmap(pixmap);
+    drag->exec(Qt::CopyAction);
+
+    // The drag consumed the release, so end the press that started it.
+    source->ungrabMouse();
 }
 
 void ColorChooserHelper::pickScreenColor()

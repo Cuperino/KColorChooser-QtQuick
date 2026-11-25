@@ -45,7 +45,8 @@ Kirigami.Page {
         }
         return colors;
     }
-    // The slot "Add to Custom Colors" writes to next.
+    // The slot "Add to Custom Colors" writes to next. As QColorDialog's
+    // nextCust, it goes out of range while the custom grid has no current cell.
     property int customColorIndex: 0
 
     // Whether to show the Help button, whose menu is about KColorChooser itself.
@@ -72,18 +73,22 @@ Kirigami.Page {
         alpha = newColor.a;
     }
 
-    // As QColorDialogPrivate::selectColor(): move the current cell of the grid
-    // showing this color, if any, to it and focus that grid.
+    // As QColorDialogPrivate::selectColor(): select the cell of the grid
+    // showing this color, if any, move its current cell there and focus it.
     function selectColor(selectedColor: color): void {
         const basicIndex = basicColors.findIndex(basicColor => Qt.colorEqual(basicColor, selectedColor));
         if (basicIndex >= 0) {
+            customColorsGrid.selectedIndex = -1;
             basicColorsGrid.currentIndex = basicIndex;
+            basicColorsGrid.selectedIndex = basicIndex;
             basicColorsGrid.forceActiveFocus();
             return;
         }
         const customIndex = customColors.findIndex(customColor => Qt.colorEqual(customColor, selectedColor));
         if (customIndex >= 0) {
+            basicColorsGrid.selectedIndex = -1;
             customColorsGrid.currentIndex = customIndex;
+            customColorsGrid.selectedIndex = customIndex;
             customColorsGrid.forceActiveFocus();
         }
     }
@@ -98,8 +103,12 @@ Kirigami.Page {
         finished();
     }
 
-    // As QColorDialogOptions::setCustomColor(), which stores colors opaque.
+    // As QColorDialogOptions::setCustomColor(), which stores colors opaque and
+    // ignores indexes out of range.
     function setCustomColor(index: int, customColor: color): void {
+        if (index < 0 || index >= customColorCount) {
+            return;
+        }
         const colors = Array.from(customColors);
         colors[index] = Qt.rgba(customColor.r, customColor.g, customColor.b, 1).toString();
         customColorSettings.colors = colors;
@@ -107,6 +116,7 @@ Kirigami.Page {
 
     function addCustomColor(): void {
         setCustomColor(customColorIndex, color);
+        // The remainder keeps the sign, as in C++.
         customColorIndex = (customColorIndex + 1) % customColorCount;
     }
 
@@ -175,7 +185,10 @@ Kirigami.Page {
 
                 colors: root.basicColors
                 rows: 6
-                onActivated: (index, swatchColor) => root.setColor(swatchColor)
+                onActivated: (index, swatchColor) => {
+                    root.setColor(swatchColor);
+                    customColorsGrid.selectedIndex = -1;
+                }
             }
 
             QQC2.Button {
@@ -199,9 +212,13 @@ Kirigami.Page {
 
                 colors: root.customColors
                 rows: 2
-                // QColorDialog adds the next custom color at the current cell.
-                onCurrentIndexChanged: root.customColorIndex = currentIndex
-                onActivated: (index, swatchColor) => root.setColor(swatchColor)
+                // QColorDialog adds the next custom color at the current cell,
+                // computing its index from row and column -1 when there is none.
+                onCurrentIndexChanged: root.customColorIndex = currentIndex >= 0 ? currentIndex : -1 - rows
+                onActivated: (index, swatchColor) => {
+                    root.setColor(swatchColor);
+                    basicColorsGrid.selectedIndex = -1;
+                }
             }
 
             QQC2.Button {
