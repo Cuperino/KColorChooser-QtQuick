@@ -7,6 +7,7 @@ import QtCore
 import QtQuick
 import QtQuick.Controls as QQC2
 import QtQuick.Layouts
+import QtQuick.Templates as T
 import org.kde.kirigami as Kirigami
 import org.kde.kcolorchooser
 
@@ -48,6 +49,8 @@ Kirigami.Page {
     // The slot "Add to Custom Colors" writes to next. As QColorDialog's
     // nextCust, it goes out of range while the custom grid has no current cell.
     property int customColorIndex: 0
+
+    property T.AbstractButton okButton: null
 
     // Whether to show the Help button, whose menu is about KColorChooser itself.
     property bool showHelpButton: true
@@ -120,11 +123,29 @@ Kirigami.Page {
         customColorIndex = (customColorIndex + 1) % customColorCount;
     }
 
+    // As QDialog::keyPressEvent(): Enter clicks the default button, OK.
+    function handleEnter(event: KeyEvent): void {
+        if (event.modifiers !== Qt.NoModifier && !(event.modifiers & Qt.KeypadModifier && event.key === Qt.Key_Enter)) {
+            return;
+        }
+        // Commit a value typed into a spin box, as QAbstractSpinBox does on Enter.
+        colorFields.commitEditing();
+        okButton?.click();
+        event.accepted = true;
+    }
+
     title: i18n("Select Color")
     globalToolBarStyle: Kirigami.ApplicationHeaderStyle.None
     padding: 10
     // mainLay's spacing above the buttons; the footer has no top padding.
     bottomPadding: 6
+
+    // Enter reaches the page once the focused control has passed on it.
+    Keys.onPressed: event => {
+        if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+            handleEnter(event);
+        }
+    }
 
     Component.onCompleted: {
         // QColorDialog starts out white before the initial color is applied.
@@ -330,7 +351,11 @@ Kirigami.Page {
             QQC2.DialogButtonBox {
                 padding: 0
                 standardButtons: QQC2.DialogButtonBox.Ok | QQC2.DialogButtonBox.Cancel
-                Component.onCompleted: standardButton(QQC2.DialogButtonBox.Ok).Accessible.defaultButton = true
+                Component.onCompleted: {
+                    const ok = standardButton(QQC2.DialogButtonBox.Ok);
+                    ok.Accessible.defaultButton = true;
+                    root.okButton = ok;
+                }
                 onAccepted: root.accept()
                 onRejected: root.reject()
             }

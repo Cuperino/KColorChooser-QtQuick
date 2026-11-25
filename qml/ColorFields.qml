@@ -32,6 +32,21 @@ RowLayout {
     signal colorEdited(color editedColor)
     signal colorDropped(color droppedColor)
 
+    // As QAbstractSpinBox on Enter: take on the value typed into the focused
+    // spin box, for styles that only take it on when Enter is released.
+    function commitEditing(): void {
+        for (const spinBox of [hueField, satField, valField, redField, greenField, blueField, alphaField]) {
+            if (!spinBox.activeFocus || !spinBox.contentItem.acceptableInput) {
+                continue;
+            }
+            const typedValue = spinBox.valueFromText(spinBox.contentItem.text, spinBox.locale);
+            if (typedValue !== spinBox.value) {
+                spinBox.value = typedValue;
+                spinBox.valueModified();
+            }
+        }
+    }
+
     spacing: 6
 
     TextMetrics {
