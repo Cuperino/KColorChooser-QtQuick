@@ -50,6 +50,18 @@ Kirigami.Page {
     // nextCust, it goes out of range while the custom grid has no current cell.
     property int customColorIndex: 0
 
+    // The page's focused button, which takes over as the default button, as an
+    // autoDefault QPushButton does in a dialog. Popups, such as the Help menu,
+    // are not part of the page.
+    readonly property T.AbstractButton defaultButtonOverride: {
+        const button = Window.activeFocusItem as T.AbstractButton;
+        for (let ancestor = button?.parent; ancestor; ancestor = ancestor.parent) {
+            if (ancestor === root) {
+                return button;
+            }
+        }
+        return null;
+    }
     property T.AbstractButton okButton: null
 
     // Whether to show the Help button, whose menu is about KColorChooser itself.
@@ -123,8 +135,16 @@ Kirigami.Page {
         customColorIndex = (customColorIndex + 1) % customColorCount;
     }
 
-    // As QDialog::keyPressEvent(): Enter clicks the default button, OK.
+    // As QDialog::keyPressEvent(): Enter clicks the default button, which is
+    // the focused button, if any, or else OK.
     function handleEnter(event: KeyEvent): void {
+        const focusedButton = defaultButtonOverride;
+        if (focusedButton) {
+            // QPushButton clicks on Enter whatever the modifiers.
+            focusedButton.click();
+            event.accepted = true;
+            return;
+        }
         if (event.modifiers !== Qt.NoModifier && !(event.modifiers & Qt.KeypadModifier && event.key === Qt.Key_Enter)) {
             return;
         }
@@ -214,6 +234,7 @@ Kirigami.Page {
 
             QQC2.Button {
                 Layout.fillWidth: true
+                Accessible.defaultButton: activeFocus
                 text: i18n("&Pick Screen Color")
                 visible: ColorChooserHelper.canPickScreenColor
                 onClicked: ColorChooserHelper.pickScreenColor()
@@ -254,6 +275,7 @@ Kirigami.Page {
                 Layout.fillWidth: true
                 // QColorDialog spaces leftLay's end like QColorShower's margin.
                 Layout.bottomMargin: 6
+                Accessible.defaultButton: activeFocus
                 text: i18n("&Add to Custom Colors")
                 onClicked: root.addCustomColor()
             }
@@ -338,6 +360,10 @@ Kirigami.Page {
                 padding: 0
                 visible: root.showHelpButton
                 standardButtons: QQC2.DialogButtonBox.Help
+                Component.onCompleted: {
+                    const helpButton = standardButton(QQC2.DialogButtonBox.Help);
+                    helpButton.Accessible.defaultButton = Qt.binding(() => helpButton.activeFocus);
+                }
                 onHelpRequested: {
                     const helpButton = standardButton(QQC2.DialogButtonBox.Help);
                     helpMenu.popup(helpButton, 0, -helpMenu.implicitHeight);
@@ -352,9 +378,12 @@ Kirigami.Page {
                 padding: 0
                 standardButtons: QQC2.DialogButtonBox.Ok | QQC2.DialogButtonBox.Cancel
                 Component.onCompleted: {
+                    // OK is the default button unless another button has focus.
                     const ok = standardButton(QQC2.DialogButtonBox.Ok);
-                    ok.Accessible.defaultButton = true;
+                    ok.Accessible.defaultButton = Qt.binding(() => !root.defaultButtonOverride || root.defaultButtonOverride === ok);
                     root.okButton = ok;
+                    const cancelButton = standardButton(QQC2.DialogButtonBox.Cancel);
+                    cancelButton.Accessible.defaultButton = Qt.binding(() => cancelButton.activeFocus);
                 }
                 onAccepted: root.accept()
                 onRejected: root.reject()
