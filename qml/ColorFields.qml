@@ -7,6 +7,7 @@ import QtQuick
 import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
+import org.kde.kcolorchooser
 
 RowLayout {
     id: root
@@ -39,12 +40,42 @@ RowLayout {
         text: "888"
     }
 
+    // QColorShowLabel: shows the color without alpha and drags it out as
+    // application/x-color.
     Rectangle {
+        id: colorLabel
+
         Layout.fillHeight: true
         Layout.preferredWidth: 60
         border.color: Kirigami.ColorUtils.linearInterpolation(Kirigami.Theme.backgroundColor, Kirigami.Theme.textColor, 0.3)
         color: Qt.rgba(root.color.r, root.color.g, root.color.b, 1)
         Accessible.ignored: true
+
+        MouseArea {
+            id: labelMouseArea
+
+            property bool pressPending: false
+            property point pressPosition
+
+            anchors.fill: parent
+
+            onPressed: mouse => {
+                pressPending = true;
+                pressPosition = Qt.point(mouse.x, mouse.y);
+            }
+            onPositionChanged: mouse => {
+                if (!pressPending) {
+                    return;
+                }
+                if (Math.abs(mouse.x - pressPosition.x) + Math.abs(mouse.y - pressPosition.y) <= Qt.styleHints.startDragDistance) {
+                    return;
+                }
+                pressPending = false;
+                ColorChooserHelper.dragColor(labelMouseArea, colorLabel.color, 30, 20);
+            }
+            onReleased: pressPending = false
+            onCanceled: pressPending = false
+        }
     }
 
     GridLayout {
