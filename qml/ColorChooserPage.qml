@@ -98,10 +98,15 @@ Kirigami.Page {
         finished();
     }
 
-    function addCustomColor(): void {
+    // As QColorDialogOptions::setCustomColor(), which stores colors opaque.
+    function setCustomColor(index: int, customColor: color): void {
         const colors = Array.from(customColors);
-        colors[customColorIndex] = color.toString();
+        colors[index] = Qt.rgba(customColor.r, customColor.g, customColor.b, 1).toString();
         customColorSettings.colors = colors;
+    }
+
+    function addCustomColor(): void {
+        setCustomColor(customColorIndex, color);
         customColorIndex = (customColorIndex + 1) % customColorCount;
     }
 
