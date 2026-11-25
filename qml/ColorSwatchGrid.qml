@@ -10,14 +10,17 @@ import org.kde.kirigami as Kirigami
 
 // QWellArray: one focus stop whose current cell moves with the arrow keys and
 // is chosen with Space or a click. Colors fill the grid column by column.
-Grid {
+Item {
     id: root
 
     property var colors: []
+    property int rows: 1
     // The cell marked while the grid has focus.
     property int currentIndex: 0
 
     readonly property int columnCount: Math.ceil(colors.length / rows)
+    readonly property int cellWidth: 28
+    readonly property int cellHeight: 24
 
     signal activated(int index, color swatchColor)
 
@@ -25,7 +28,17 @@ Grid {
         activated(index, colors[index]);
     }
 
-    flow: Grid.TopToBottom
+    function indexAt(x: real, y: real): int {
+        const row = Math.floor(y / cellHeight);
+        const column = Math.floor(x / cellWidth);
+        if (row < 0 || column < 0 || row >= rows || column >= columnCount) {
+            return -1;
+        }
+        return row + column * rows;
+    }
+
+    implicitWidth: grid.implicitWidth
+    implicitHeight: grid.implicitHeight
     activeFocusOnTab: true
     Accessible.role: Accessible.Table
 
@@ -62,48 +75,55 @@ Grid {
         event.accepted = true;
     }
 
-    Repeater {
-        model: root.colors
+    Grid {
+        id: grid
 
-        Item {
-            id: swatch
+        rows: root.rows
+        flow: Grid.TopToBottom
 
-            required property int index
-            required property color modelData
+        Repeater {
+            model: root.colors
 
-            readonly property bool current: index === root.currentIndex
+            Item {
+                id: swatch
 
-            implicitWidth: 28
-            implicitHeight: 24
-            Accessible.name: swatch.modelData.toString()
-            Accessible.role: Accessible.Cell
-            Accessible.focusable: true
-            Accessible.focused: swatch.current && root.activeFocus
+                required property int index
+                required property color modelData
 
-            Rectangle {
-                anchors.fill: parent
-                anchors.margins: 3
-                color: swatch.modelData
-            }
+                readonly property bool current: index === root.currentIndex
 
-            // Breeze's focus frame, which QWellArray draws on its current cell.
-            Rectangle {
-                y: parent.height - 1
-                width: parent.width
-                height: 1
-                color: Kirigami.Theme.highlightColor
-                visible: swatch.current && root.activeFocus
-            }
+                implicitWidth: root.cellWidth
+                implicitHeight: root.cellHeight
+                Accessible.name: swatch.modelData.toString()
+                Accessible.role: Accessible.Cell
+                Accessible.focusable: true
+                Accessible.focused: swatch.current && root.activeFocus
 
-            // The press moves the current cell, the release chooses it.
-            MouseArea {
-                anchors.fill: parent
-                onPressed: {
-                    root.currentIndex = swatch.index;
-                    root.forceActiveFocus(Qt.MouseFocusReason);
+                Rectangle {
+                    anchors.fill: parent
+                    anchors.margins: 3
+                    color: swatch.modelData
                 }
-                onReleased: root.activate(root.currentIndex)
+
+                // Breeze's focus frame, which QWellArray draws on its current cell.
+                Rectangle {
+                    y: parent.height - 1
+                    width: parent.width
+                    height: 1
+                    color: Kirigami.Theme.highlightColor
+                    visible: swatch.current && root.activeFocus
+                }
             }
         }
+    }
+
+    // The press moves the current cell, the release chooses it.
+    MouseArea {
+        anchors.fill: parent
+        onPressed: mouse => {
+            root.currentIndex = root.indexAt(mouse.x, mouse.y);
+            root.forceActiveFocus(Qt.MouseFocusReason);
+        }
+        onReleased: root.activate(root.currentIndex)
     }
 }
