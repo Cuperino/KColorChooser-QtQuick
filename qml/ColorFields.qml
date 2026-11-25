@@ -30,6 +30,7 @@ RowLayout {
 
     signal hsvaEdited(real hue, real saturation, real value, real alpha)
     signal colorEdited(color editedColor)
+    signal colorDropped(color droppedColor)
 
     spacing: 6
 
@@ -40,8 +41,8 @@ RowLayout {
         text: "888"
     }
 
-    // QColorShowLabel: shows the color without alpha and drags it out as
-    // application/x-color.
+    // QColorShowLabel: shows the color without alpha, drags it out as
+    // application/x-color and takes on dropped colors.
     Rectangle {
         id: colorLabel
 
@@ -75,6 +76,32 @@ RowLayout {
             }
             onReleased: pressPending = false
             onCanceled: pressPending = false
+        }
+
+        DropArea {
+            // The color a drag carries, or undefined if it carries none.
+            function dragColor(drag: var): var {
+                const dragged = drag.hasColor ? drag.colorData : undefined;
+                return dragged !== undefined && dragged.valid ? dragged : undefined;
+            }
+
+            anchors.fill: parent
+            keys: ["application/x-color"]
+
+            onEntered: drag => {
+                if (dragColor(drag) === undefined) {
+                    drag.accepted = false;
+                }
+            }
+            onDropped: drop => {
+                const droppedColor = dragColor(drop);
+                if (droppedColor === undefined) {
+                    drop.accepted = false;
+                    return;
+                }
+                root.colorDropped(droppedColor);
+                drop.accept();
+            }
         }
     }
 

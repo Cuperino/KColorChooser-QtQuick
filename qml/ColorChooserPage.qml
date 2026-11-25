@@ -297,6 +297,8 @@ Kirigami.Page {
                     root.alpha = newAlpha;
                 }
                 onColorEdited: editedColor => root.setColor(editedColor)
+                // QColorShower keeps the alpha it shows.
+                onColorDropped: droppedColor => root.setColor(Qt.rgba(droppedColor.r, droppedColor.g, droppedColor.b, root.alpha))
             }
         }
     }
