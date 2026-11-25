@@ -21,12 +21,17 @@ Item {
     property int currentIndex: 0
     // The cell last chosen, or -1 for none.
     property int selectedIndex: -1
+    // Whether dropped colors replace the cell they land on.
+    property bool acceptDrops: false
 
     readonly property int columnCount: Math.ceil(colors.length / rows)
     readonly property int cellWidth: 28
     readonly property int cellHeight: 24
 
     signal activated(int index, color swatchColor)
+    signal dropped(int index, color droppedColor)
+    // A drag left the grid without dropping.
+    signal dragExited
 
     // As QWellArray::setSelected(): choosing no cell only clears the selection.
     function select(index: int): void {
@@ -43,6 +48,12 @@ Item {
             return -1;
         }
         return row + column * rows;
+    }
+
+    // The color a drag carries, or undefined if it carries none.
+    function dragColor(drag: var): var {
+        const dragged = drag.hasColor ? drag.colorData : undefined;
+        return dragged !== undefined && dragged.valid ? dragged : undefined;
     }
 
     implicitWidth: grid.implicitWidth
@@ -168,5 +179,36 @@ Item {
             root.select(root.currentIndex);
         }
         onCanceled: pressPending = false
+    }
+
+    // As QColorWell's drag events: hovering moves the current cell, and a drop
+    // replaces the cell under it.
+    DropArea {
+        anchors.fill: parent
+        enabled: root.acceptDrops
+        keys: ["application/x-color"]
+
+        onEntered: drag => {
+            if (root.dragColor(drag) === undefined) {
+                drag.accepted = false;
+                return;
+            }
+            root.currentIndex = root.indexAt(drag.x, drag.y);
+        }
+        onPositionChanged: drag => {
+            if (root.dragColor(drag) !== undefined) {
+                root.currentIndex = root.indexAt(drag.x, drag.y);
+            }
+        }
+        onExited: root.dragExited()
+        onDropped: drop => {
+            const droppedColor = root.dragColor(drop);
+            if (droppedColor === undefined) {
+                drop.accepted = false;
+                return;
+            }
+            root.dropped(root.indexAt(drop.x, drop.y), droppedColor);
+            drop.accept();
+        }
     }
 }

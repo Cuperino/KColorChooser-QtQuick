@@ -212,12 +212,20 @@ Kirigami.Page {
 
                 colors: root.customColors
                 rows: 2
+                acceptDrops: true
                 // QColorDialog adds the next custom color at the current cell,
                 // computing its index from row and column -1 when there is none.
                 onCurrentIndexChanged: root.customColorIndex = currentIndex >= 0 ? currentIndex : -1 - rows
                 onActivated: (index, swatchColor) => {
                     root.setColor(swatchColor);
                     basicColorsGrid.selectedIndex = -1;
+                }
+                onDropped: (index, droppedColor) => root.setCustomColor(index, droppedColor)
+                // QColorWell hands focus back to the dialog.
+                onDragExited: {
+                    if (activeFocus) {
+                        root.forceActiveFocus();
+                    }
                 }
             }
 
